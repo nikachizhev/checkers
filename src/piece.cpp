@@ -16,7 +16,7 @@ bool Piece::isKing() const {
     return type == PieceType::BLACK_KING || type == PieceType::WHITE_KING;
 }
 
-void Piece::MakeKing() {
+void Piece::makeKing() {
     if (type == PieceType::WHITE)
         type = PieceType::WHITE_KING;
     else if (type == PieceType::BLACK)

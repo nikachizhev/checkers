@@ -4,6 +4,7 @@
 #include "board.h"
 #include "colors.h"
 using namespace std;
+static constexpr int POSSIBLE_MOVE[4][2] = {{-1, -1}, {-1, 1}, {1, -1}, {1, 1}};
 
 Board::Board() {
     grid.resize(8, vector<Piece>(8, Piece(PieceType::EMPTY)));
@@ -82,6 +83,10 @@ void Board::movePiece(int from_row, int from_col, int to_row, int to_col) {
         }
     }
 }
+bool Board::isInsideBoard(int row, int col) const {
+    return row >= 0 && row < 8 && col >= 0 && col < 8;
+}
+
 bool Board::isCaptureMove(int from_row, int from_col, int to_row, int to_col) {
     Piece &moving_piece = grid[from_row][from_col];
     Piece &to_piece = grid[to_row][to_col];
@@ -129,9 +134,7 @@ bool Board::isValidMove(int from_row, int from_col, int to_row, int to_col) {
     Piece &moving_piece = grid[from_row][from_col];
     Piece &to_piece = grid[to_row][to_col];
 
-    if (from_row < 0 || from_row >= 8 || from_col < 0 || from_col >= 8 || to_row < 0 ||
-        to_row >= 8 || to_col < 0 || to_col >= 8)
-        return false;
+    if (!isInsideBoard(to_row, to_col)) return false;
 
     if (to_piece.getType() != PieceType::EMPTY) return false;
 
@@ -146,31 +149,94 @@ bool Board::isValidMove(int from_row, int from_col, int to_row, int to_col) {
 
     return false;
 }
+bool Board::hasDiagonalCapture(int row, int col, int d_row, int d_col) {
+    int current_row = row + d_row;
+    int current_col = col + d_col;
+    while (isInsideBoard(current_row, current_col)) {
+        if (isCaptureMove(row, col, current_row, current_col)) return true;
+        current_row += d_row;
+        current_col += d_col;
+    }
+    return false;
+}
 
 bool Board::canAttackAgain(int row, int col) {
     Piece &piece = grid[row][col];
-    int possible_move[4][2] = {{-1, -1}, {-1, 1}, {1, -1}, {1, 1}};
 
     if (piece.getType() == PieceType::EMPTY) return false;
+
     for (int type_move = 0; type_move < 4; type_move++) {
-        int d_row = possible_move[type_move][0];
-        int d_col = possible_move[type_move][1];
+        int d_row = POSSIBLE_MOVE[type_move][0];
+        int d_col = POSSIBLE_MOVE[type_move][1];
 
         if (!piece.isKing()) {
             int new_row = row + d_row * 2;
             int new_col = col + d_col * 2;
 
-            if (new_row < 0 || new_row >= 8 || new_col < 0 || new_col >= 8) continue;
-
+            if (!isInsideBoard(new_row, new_col)) continue;
             if (isCaptureMove(row, col, new_row, new_col)) return true;
-        } else {
-            int current_row = row + d_row;
-            int current_col = col + d_col;
+        } else if (hasDiagonalCapture(row, col, d_row, d_col))
+            return true;
+    }
+    return false;
+}
 
-            while (current_row >= 0 && current_row < 8 && current_col >= 0 && current_col < 8) {
-                if (isCaptureMove(row, col, current_row, current_col)) return true;
-                current_row += d_row;
-                current_col += d_col;
+bool Board::hasMandatoryCapture(PieceType player) {
+    for (int row = 0; row < 8; row++) {
+        for (int col = 0; col < 8; col++) {
+            Piece &piece = grid[row][col];
+            if (piece.getType() == PieceType::EMPTY) continue;
+
+            if ((piece.isWhite() && player == PieceType::BLACK) ||
+                (piece.isBlack() && player == PieceType::WHITE))
+                continue;
+
+            for (int type_move = 0; type_move < 4; type_move++) {
+                int d_row = POSSIBLE_MOVE[type_move][0];
+                int d_col = POSSIBLE_MOVE[type_move][1];
+
+                if (!piece.isKing()) {
+                    int new_row = row + d_row * 2;
+                    int new_col = col + d_col * 2;
+
+                    if (!isInsideBoard(new_row, new_col)) continue;
+
+                    if (isCaptureMove(row, col, new_row, new_col)) return true;
+                } else if (hasDiagonalCapture(row, col, d_row, d_col))
+                    return true;
+            }
+        }
+    }
+    return false;
+}
+
+bool Board::hasAnyMoves(PieceType player) {
+    for (int row = 0; row < 8; row++) {
+        for (int col = 0; col < 8; col++) {
+            Piece &piece = grid[row][col];
+            if (piece.getType() == PieceType::EMPTY) continue;
+
+            if ((piece.isWhite() && player == PieceType::BLACK) ||
+                (piece.isBlack() && player == PieceType::WHITE))
+                continue;
+
+            for (int i = 0; i < 4; i++) {
+                int d_row = POSSIBLE_MOVE[i][0];
+                int d_col = POSSIBLE_MOVE[i][1];
+
+                if (!piece.isKing()) {
+                    int new_row = row + d_row;
+                    int new_col = col + d_col;
+                    int cap_row = row + d_row * 2;
+                    int cap_col = col + d_col * 2;
+
+                    if (isInsideBoard(new_row, new_col) &&
+                            isValidMove(row, col, new_row, new_col) ||
+                        isValidMove(row, col, cap_row, cap_col))
+                        return true;
+
+                } else if (hasDiagonalCapture(row, col, d_row, d_col))
+                    return true;
             }
         }
     }
