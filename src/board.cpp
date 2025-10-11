@@ -10,6 +10,10 @@ Board::Board() {
     grid.resize(8, vector<Piece>(8, Piece(PieceType::EMPTY)));
 }
 
+Piece &Board::getPiece(int row, int col) {
+    return grid[row][col];
+}
+
 void Board::initialPosition() {
     for (int row = 0; row < 2; row++) {
         for (int col = 0; col < 8; col++) {
@@ -22,7 +26,7 @@ void Board::initialPosition() {
 }
 
 void Board::printBoard() {
-    cout << "   A  B  C  D  E  F  G  H\n";
+    cout << "    A  B  C  D  E  F  G  H\n";
 
     for (int row = 0; row < 8; row++) {
         cout << (row + 1 < 10 ? " " : "") << row + 1 << "  ";
@@ -52,9 +56,9 @@ void Board::movePiece(int from_row, int from_col, int to_row, int to_col) {
     grid[from_row][from_col].reset();
 
     // Превращаем клетку в дамку//
-    if (moving_piece.isWhite() && to_row == 7)
+    if (moving_piece.isWhite() && to_row == 0)
         grid[to_row][to_col].makeKing();
-    else if (moving_piece.isBlack() && to_row == 0)
+    else if (moving_piece.isBlack() && to_row == 7)
         grid[to_row][to_col].makeKing();
 
     // Если съедаем вражескую шашку
@@ -230,9 +234,10 @@ bool Board::hasAnyMoves(PieceType player) {
                     int cap_row = row + d_row * 2;
                     int cap_col = col + d_col * 2;
 
-                    if (isInsideBoard(new_row, new_col) &&
-                            isValidMove(row, col, new_row, new_col) ||
+                    if ((isInsideBoard(new_row, new_col) &&
+                         isValidMove(row, col, new_row, new_col)) ||
                         isValidMove(row, col, cap_row, cap_col))
+
                         return true;
 
                 } else if (hasDiagonalCapture(row, col, d_row, d_col))
