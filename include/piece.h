@@ -12,7 +12,9 @@ class Piece {
     bool isWhite() const;
     bool isBlack() const;
     bool isKing() const;
-    void MakeKing();
+    PieceType getType() const;
+    void makeKing();
+    void reset();
 };
 
 #endif

@@ -22,3 +22,11 @@ void Piece::MakeKing() {
     else if (type == PieceType::BLACK)
         type = PieceType::BLACK_KING;
 }
+
+PieceType Piece::getType() const {
+    return type;
+}
+
+void Piece::reset() {
+    type = PieceType::EMPTY;
+}
