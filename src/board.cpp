@@ -15,12 +15,12 @@ Piece &Board::getPiece(int row, int col) {
 }
 
 void Board::initialPosition() {
-    for (int row = 0; row < 2; row++) {
+    for (int row = 0; row < 3; row++) {
         for (int col = 0; col < 8; col++) {
             if ((row + col) % 2 == 1) {
                 grid[row][col] = Piece(PieceType::BLACK);
+            } else
                 grid[7 - row][col] = Piece(PieceType::WHITE);
-            }
         }
     }
 }
@@ -48,23 +48,23 @@ void Board::printBoard() {
         cout << "\n";
     }
 }
-
 void Board::movePiece(int from_row, int from_col, int to_row, int to_col) {
     // Обычный ход
     Piece &moving_piece = grid[from_row][from_col];
+    Piece temp_piece = moving_piece;
+    bool is_capture = isCaptureMove(from_row, from_col, to_row, to_col);
     grid[to_row][to_col] = moving_piece;
     grid[from_row][from_col].reset();
 
     // Превращаем клетку в дамку//
-    if (moving_piece.isWhite() && to_row == 0)
+    if (temp_piece.isWhite() && to_row == 0)
         grid[to_row][to_col].makeKing();
-    else if (moving_piece.isBlack() && to_row == 7)
+    else if (temp_piece.isBlack() && to_row == 7)
         grid[to_row][to_col].makeKing();
 
     // Если съедаем вражескую шашку
-    if (isCaptureMove(from_row, from_col, to_row, to_col)) {
-
-        if (!moving_piece.isKing()) {
+    if (is_capture) {
+        if (!temp_piece.isKing()) {
             int mid_row = (from_row + to_row) / 2;
             int mid_col = (from_col + to_col) / 2;
             grid[mid_row][mid_col].reset();
@@ -76,8 +76,8 @@ void Board::movePiece(int from_row, int from_col, int to_row, int to_col) {
 
             while (current_row != to_row && current_col != to_col) {
                 Piece &current = grid[current_row][current_col];
-                if ((moving_piece.isWhite() && current.isBlack()) ||
-                    (moving_piece.isBlack() && current.isWhite())) {
+                if ((temp_piece.isWhite() && current.isBlack()) ||
+                    (temp_piece.isBlack() && current.isWhite())) {
                     current.reset();
                     break;
                 }
@@ -123,8 +123,9 @@ bool Board::isCaptureMove(int from_row, int from_col, int to_row, int to_col) {
                 (currentPiece.isWhite() && moving_piece.isBlack())) {
                 enemy_count++;
                 if (enemy_count > 1) return false;
-            } else
+            } else if (currentPiece.getType() != PieceType::EMPTY) {
                 return false;
+            }
 
             current_col += col_step;
             current_row += row_step;
