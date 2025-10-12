@@ -27,8 +27,11 @@ void Game::run() {
             gameOver = true;
             break;
         }
-        getTurn();
-        switchPlayer();
+        if (!getTurn()) {
+            cout << "Попробуйте снова — ход не выполнен." << endl;
+            continue;
+        } else
+            switchPlayer();
     }
 }
 
@@ -78,6 +81,15 @@ bool Game::parseMove(int &from_row, int &from_col, int &to_row, int &to_col, int
             cout << "Неверный формат ввода" << endl;
             continue;
         }
+        if (!board.isInsideBoard(to_row, to_col)) {
+            cout << "Вы вышли за пределы доски." << endl;
+            continue;
+        }
+        Piece target = board.getPiece(to_row, to_col);
+        if (target.getType() != PieceType::EMPTY) {
+            cout << "Целевая клетка занята." << endl;
+            continue;
+        }
         if (expected_row != -1 && expected_col != -1) {
             if (from_row != expected_row || from_col != expected_col) {
                 cout << "Вы должны продолжить атаку той же фигурой!" << endl;
@@ -86,6 +98,12 @@ bool Game::parseMove(int &from_row, int &from_col, int &to_row, int &to_col, int
         }
 
         Piece piece = board.getPiece(from_row, from_col);
+
+        if (piece.getType() == PieceType::EMPTY) {
+            cout << "Вы не выбрали фигуру, клетка пуста." << endl;
+            continue;
+        }
+
         if ((currentPlayer == PieceType::WHITE && !piece.isWhite()) ||
             (currentPlayer == PieceType::BLACK && !piece.isBlack())) {
             cout << "Вы не можете ходить чужой фигурой!" << endl;
@@ -96,8 +114,19 @@ bool Game::parseMove(int &from_row, int &from_col, int &to_row, int &to_col, int
             cout << "Вы должны сделать атакуюущий ход" << endl;
             continue;
         }
+
+        if (!piece.isKing() && !board.isCaptureMove(from_row, from_col, to_row, to_col)) {
+            if ((piece.isWhite() && to_row > from_row) || (piece.isBlack() && to_row < from_row)) {
+                cout << "Обычная шашка не может ходить назад." << endl;
+                continue;
+            }
+            if (abs(to_row - from_row) != 1 || abs(to_col - from_col) != 1) {
+                cout << "Обычная шашка может ходить только на одну клетку по диагонали." << endl;
+                continue;
+            }
+        }
         if (!board.isValidMove(from_row, from_col, to_row, to_col)) {
-            cout << "Недопустимый ход" << endl;
+            cout << "Недопустимый ход по правилам" << endl;
             continue;
         }
 
@@ -105,29 +134,40 @@ bool Game::parseMove(int &from_row, int &from_col, int &to_row, int &to_col, int
     }
     return true;
 }
-void Game::getTurn() {
+bool Game::getTurn() {
     int from_row, from_col, to_row, to_col;
-    cout << "Введите ход в формате начальная позиция конечная позиция (например E3 f5)" << endl;
-    bool wasCapture = false;
-    if (parseMove(from_row, from_col, to_row, to_col)) {
-        wasCapture = board.isCaptureMove(from_row, from_col, to_row, to_col);
-        board.movePiece(from_row, from_col, to_row, to_col);
+    cout << "Введите ход в формате начальная позиция конечная позиция (например E3 F5)" << endl;
 
-        int attacker_row = to_row;
-        int attacker_col = to_col;
+    if (!parseMove(from_row, from_col, to_row, to_col)) {
+        return false;
+    }
 
-        while (wasCapture && board.canAttackAgain(attacker_row, attacker_col)) {
-            board.printBoard();
-            cout << "Вы можете сделать ещё один атакующий ход c " << char('A' + attacker_col)
-                 << (1 + attacker_row) << endl;
-            if (parseMove(from_row, from_col, to_row, to_col, attacker_row, attacker_col) &&
-                board.isCaptureMove(from_row, from_col, to_row, to_col)) {
+    bool wasCapture = board.isCaptureMove(from_row, from_col, to_row, to_col);
+    board.movePiece(from_row, from_col, to_row, to_col);
+
+    int attacker_row = to_row;
+    int attacker_col = to_col;
+
+    while (wasCapture && board.canAttackAgain(attacker_row, attacker_col)) {
+        board.printBoard();
+        cout << "Вы можете сделать ещё один атакующий ход c " << char('A' + attacker_col)
+             << (1 + attacker_row) << endl;
+
+        bool continued = false;
+        while (!continued) {
+            if (!parseMove(from_row, from_col, to_row, to_col, attacker_row, attacker_col)) {
+                cout << "Попробуйте снова, вы должны продолжить атаку той же фигурой." << endl;
+                continue;
+            }
+
+            if (board.isCaptureMove(from_row, from_col, to_row, to_col)) {
                 board.movePiece(from_row, from_col, to_row, to_col);
                 attacker_row = to_row;
                 attacker_col = to_col;
-                wasCapture = true;
+                continued = true;
             } else
                 break;
         }
     }
+    return true;
 }

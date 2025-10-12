@@ -10,6 +10,7 @@ class Board {
 
   public:
     Board();
+    void clear();
     void initialPosition();
     void printBoard();
     Piece &getPiece(int row, int col);
@@ -21,5 +22,7 @@ class Board {
     bool hasAnyMoves(PieceType player);
     bool hasDiagonalCapture(int row, int col, int d_row, int d_coll);
     bool isInsideBoard(int row, int col) const;
+    bool checkPath(int from_row, int from_col, int to_row, int to_col, const Piece &moving_piece,
+                   int max_enemies = 0) const;
 };
 #endif

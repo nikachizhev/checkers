@@ -32,22 +32,27 @@ void Board::printBoard() {
         cout << (row + 1 < 10 ? " " : "") << row + 1 << "  ";
         for (int col = 0; col < 8; col++) {
             Piece &p = grid[row][col];
+            string cellColor = ((row + col) % 2 == 0) ? BG_WHITE : BG_BLACK;
 
+            string pieceSymbol;
             if (p.getType() == PieceType::EMPTY) {
-                cout << ".  ";
+                pieceSymbol = " ";
             } else if (p.getType() == PieceType::WHITE) {
-                cout << WHITE_COLOR << "w" << RESET << "  ";
+                pieceSymbol = YELLOW_COLOR "w" RESET;
             } else if (p.getType() == PieceType::BLACK) {
-                cout << RED_COLOR << "b" << RESET << "  ";
+                pieceSymbol = RED_COLOR "b" RESET;
             } else if (p.getType() == PieceType::WHITE_KING) {
-                cout << "♔" << RESET << "  ";
+                pieceSymbol = YELLOW_COLOR "♔" RESET;
             } else if (p.getType() == PieceType::BLACK_KING) {
-                cout << "♚" << RESET << "  ";
+                pieceSymbol = RED_COLOR "♚" RESET;
             }
+
+            cout << cellColor << " " << pieceSymbol << " " << RESET;
         }
         cout << "\n";
     }
 }
+
 void Board::movePiece(int from_row, int from_col, int to_row, int to_col) {
     // Обычный ход
     Piece &moving_piece = grid[from_row][from_col];
@@ -87,8 +92,35 @@ void Board::movePiece(int from_row, int from_col, int to_row, int to_col) {
         }
     }
 }
+
 bool Board::isInsideBoard(int row, int col) const {
     return row >= 0 && row < 8 && col >= 0 && col < 8;
+}
+
+bool Board::checkPath(int from_row, int from_col, int to_row, int to_col, const Piece &moving_piece,
+                      int max_enemies) const {
+    if (abs(from_row - to_row) != abs(from_col - to_col)) return false;
+
+    int row_step = (to_row > from_row) ? 1 : -1;
+    int col_step = (to_col > from_col) ? 1 : -1;
+    int r = from_row + row_step;
+    int c = from_col + col_step;
+    int enemy_count = 0;
+
+    while (r != to_row && c != to_col) {
+        const Piece &current = grid[r][c];
+
+        if ((moving_piece.isWhite() && current.isBlack()) ||
+            (moving_piece.isBlack() && current.isWhite())) {
+            enemy_count++;
+            if (enemy_count > max_enemies) return false;
+        } else if (current.getType() != PieceType::EMPTY) {
+            return false;
+        }
+        r += row_step;
+        c += col_step;
+    }
+    return enemy_count == max_enemies;
 }
 
 bool Board::isCaptureMove(int from_row, int from_col, int to_row, int to_col) {
@@ -108,30 +140,9 @@ bool Board::isCaptureMove(int from_row, int from_col, int to_row, int to_col) {
                 return true;
             }
         }
-    } else if (abs(from_row - to_row) == abs(from_col - to_col) && abs(from_row - to_row) > 1) {
+    } else if (abs(from_row - to_row) == abs(from_col - to_col) && abs(from_row - to_row) > 1)
+        return checkPath(from_row, from_col, to_row, to_col, moving_piece, 1);
 
-        int row_step = (to_row > from_row) ? 1 : -1;
-        int col_step = (to_col > from_col) ? 1 : -1;
-        int current_row = row_step + from_row;
-        int current_col = col_step + from_col;
-        int enemy_count = 0;
-
-        while (current_row != to_row && current_col != to_col) {
-            Piece &currentPiece = grid[current_row][current_col];
-
-            if ((currentPiece.isBlack() && moving_piece.isWhite()) ||
-                (currentPiece.isWhite() && moving_piece.isBlack())) {
-                enemy_count++;
-                if (enemy_count > 1) return false;
-            } else if (currentPiece.getType() != PieceType::EMPTY) {
-                return false;
-            }
-
-            current_col += col_step;
-            current_row += row_step;
-        }
-        return enemy_count == 1;
-    }
     return false;
 }
 
@@ -139,21 +150,35 @@ bool Board::isValidMove(int from_row, int from_col, int to_row, int to_col) {
     Piece &moving_piece = grid[from_row][from_col];
     Piece &to_piece = grid[to_row][to_col];
 
-    if (!isInsideBoard(to_row, to_col)) return false;
+    if (!isInsideBoard(to_row, to_col)) {
+        return false;
+    }
 
-    if (to_piece.getType() != PieceType::EMPTY) return false;
-
-    if (moving_piece.isWhite() && (from_row - 1 == to_row) &&
-        ((from_col - 1 == to_col) || (from_col + 1 == to_col)))
-        return true;
-    else if (moving_piece.isBlack() && (from_row + 1 == to_row) &&
-             ((from_col - 1 == to_col) || (from_col + 1 == to_col)))
-        return true;
+    if (to_piece.getType() != PieceType::EMPTY) {
+        return false;
+    }
 
     if (isCaptureMove(from_row, from_col, to_row, to_col)) return true;
 
+    if (hasMandatoryCapture(moving_piece.getType())) {
+        return false;
+    }
+
+    if (!moving_piece.isKing()) {
+
+        if (moving_piece.isWhite() && (from_row - 1 == to_row) &&
+            ((from_col - 1 == to_col) || (from_col + 1 == to_col)))
+            return true;
+
+        else if (moving_piece.isBlack() && (from_row + 1 == to_row) &&
+                 ((from_col - 1 == to_col) || (from_col + 1 == to_col)))
+            return true;
+
+    } else if (abs(from_row - to_row) == abs(from_col - to_col))
+        return checkPath(from_row, from_col, to_row, to_col, moving_piece, 0);
     return false;
 }
+
 bool Board::hasDiagonalCapture(int row, int col, int d_row, int d_col) {
     int current_row = row + d_row;
     int current_col = col + d_col;
@@ -247,4 +272,9 @@ bool Board::hasAnyMoves(PieceType player) {
         }
     }
     return false;
+}
+
+void Board::clear() {
+    for (int row = 0; row < 8; ++row)
+        for (int col = 0; col < 8; ++col) grid[row][col] = Piece();
 }
