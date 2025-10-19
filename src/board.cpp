@@ -215,26 +215,11 @@ bool Board::hasMandatoryCapture(PieceType player) {
     for (int row = 0; row < 8; row++) {
         for (int col = 0; col < 8; col++) {
             Piece &piece = grid[row][col];
-            if (piece.getType() == PieceType::EMPTY) continue;
 
             if ((piece.isWhite() && player == PieceType::BLACK) ||
                 (piece.isBlack() && player == PieceType::WHITE))
                 continue;
-
-            for (int type_move = 0; type_move < 4; type_move++) {
-                int d_row = POSSIBLE_MOVE[type_move][0];
-                int d_col = POSSIBLE_MOVE[type_move][1];
-
-                if (!piece.isKing()) {
-                    int new_row = row + d_row * 2;
-                    int new_col = col + d_col * 2;
-
-                    if (!isInsideBoard(new_row, new_col)) continue;
-
-                    if (isCaptureMove(row, col, new_row, new_col)) return true;
-                } else if (hasDiagonalCapture(row, col, d_row, d_col))
-                    return true;
-            }
+            if (canAttackAgain(row, col)) return true;
         }
     }
     return false;
@@ -244,29 +229,20 @@ bool Board::hasAnyMoves(PieceType player) {
     for (int row = 0; row < 8; row++) {
         for (int col = 0; col < 8; col++) {
             Piece &piece = grid[row][col];
-            if (piece.getType() == PieceType::EMPTY) continue;
 
+            if (piece.getType() == PieceType::EMPTY) continue;
             if ((piece.isWhite() && player == PieceType::BLACK) ||
                 (piece.isBlack() && player == PieceType::WHITE))
                 continue;
 
+            if (canAttackAgain(row, col)) return true;
+
             for (int i = 0; i < 4; i++) {
                 int d_row = POSSIBLE_MOVE[i][0];
                 int d_col = POSSIBLE_MOVE[i][1];
-
-                if (!piece.isKing()) {
-                    int new_row = row + d_row;
-                    int new_col = col + d_col;
-                    int cap_row = row + d_row * 2;
-                    int cap_col = col + d_col * 2;
-
-                    if ((isInsideBoard(new_row, new_col) &&
-                         isValidMove(row, col, new_row, new_col)) ||
-                        isValidMove(row, col, cap_row, cap_col))
-
-                        return true;
-
-                } else if (hasDiagonalCapture(row, col, d_row, d_col))
+                int new_row = row + d_row;
+                int new_col = col + d_col;
+                if ((isInsideBoard(new_row, new_col) && isValidMove(row, col, new_row, new_col)))
                     return true;
             }
         }

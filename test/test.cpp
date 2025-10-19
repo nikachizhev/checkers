@@ -151,6 +151,26 @@ void testBackwardCaptureByMan() {
 
     cout << "testBackwardCaptureByMan passed\n";
 }
+void testMandatoryCaptureBlocksNormalMove() {
+    Board board;
+    board.clear();
+
+    // Белая шашка на C3
+    board.getPiece(2, 2) = Piece(PieceType::WHITE);
+
+    // Чёрная шашка на D4
+    board.getPiece(3, 3) = Piece(PieceType::BLACK);
+
+    // Целевая клетка для атаки — E5
+    board.getPiece(4, 4) = Piece(PieceType::EMPTY);
+
+    board.getPiece(3, 1) = Piece(PieceType::EMPTY);
+
+    assert(board.hasAnyMoves(PieceType::WHITE) == true);
+    assert(board.isValidMove(2, 2, 3, 1) == false);
+    assert(board.isValidMove(2, 2, 4, 4) == true);
+    cout << "testMandatoryCaptureBlocksNormalMove\n";
+}
 
 int main() {
     testdBackMove();
@@ -163,6 +183,7 @@ int main() {
     testKingCapture();
     testKingCannotCaptureMultiplePieces();
     testBackwardCaptureByMan();
+    testMandatoryCaptureBlocksNormalMove();
 
     cout << "Все тесты пройдены!\n";
     return 0;
