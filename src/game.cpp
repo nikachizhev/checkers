@@ -125,6 +125,13 @@ bool Game::parseMove(int &from_row, int &from_col, int &to_row, int &to_col, int
                 continue;
             }
         }
+        if (piece.isKing() && !board.checkPath(from_row, from_col, to_row, to_col, piece, 1)) {
+            cout << "Недопустимый ход дамки. Дамка может ходить только по диагонали\n "
+                    "и не может перепрыгивать свои шашки или больше двух вражеских"
+                 << endl;
+            continue;
+        }
+
         if (!board.isValidMove(from_row, from_col, to_row, to_col)) {
             cout << "Недопустимый ход по правилам" << endl;
             continue;
