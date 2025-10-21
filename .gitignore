@@ -1,0 +1,27 @@
+# Объектные файлы
+*.o
+
+# Исполняемые файлы
+*.out
+*.exe
+*.bin
+main
+
+# Каталоги сборки
+/build/
+/bin/
+/dist/
+
+# Временные и лог-файлы
+*.log
+*.tmp
+*.swp
+
+# VSCode
+.vscode/
+
+# Системные файлы
+.DS_Store
+Thumbs.db
+
+main
